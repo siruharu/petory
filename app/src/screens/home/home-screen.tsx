@@ -6,6 +6,7 @@ import { PetSummaryCard } from '../../components/cards/pet-summary-card';
 import { ScheduleAlertCard } from '../../components/cards/schedule-alert-card';
 import { EmptyState } from '../../components/feedback/empty-state';
 import { ErrorState } from '../../components/feedback/error-state';
+import { InlineMessage } from '../../components/feedback/inline-message';
 import { LoadingState } from '../../components/feedback/loading-state';
 import { fetchHome } from '../../features/home/home-api';
 import { PetSwitcherSheet } from '../pets/pet-switcher-sheet';
@@ -21,6 +22,8 @@ interface HomeScreenProps {
   onCreatePet?: () => void;
 }
 
+type HomeStatus = 'loading' | 'success' | 'empty' | 'error';
+
 function orderPetsForDisplay(pets: Pet[], selectedPetId?: string) {
   if (!selectedPetId) {
     return pets;
@@ -34,20 +37,6 @@ function orderPetsForDisplay(pets: Pet[], selectedPetId?: string) {
   return [selectedPet, ...pets.filter((pet) => pet.id !== selectedPetId)];
 }
 
-function mergePets(primaryPets: Pet[], secondaryPets: Pet[]): Pet[] {
-  const petMap = new Map<string, Pet>();
-
-  secondaryPets.forEach((pet) => {
-    petMap.set(pet.id, pet);
-  });
-
-  primaryPets.forEach((pet) => {
-    petMap.set(pet.id, pet);
-  });
-
-  return Array.from(petMap.values());
-}
-
 function deriveStatus(response: HomeResponse) {
   return response.pets.length === 0 &&
     response.todaySchedules.length === 0 &&
@@ -57,6 +46,29 @@ function deriveStatus(response: HomeResponse) {
     : 'success';
 }
 
+function createFallbackHomeResponse(localPets: Pet[], selectedPetId?: string): HomeResponse {
+  const orderedPets = orderPetsForDisplay(localPets, selectedPetId);
+  const selectedPet = orderedPets.find((pet) => pet.id === selectedPetId) ?? orderedPets[0] ?? null;
+
+  return {
+    selectedPet,
+    pets: orderedPets,
+    todaySchedules: [],
+    overdueSchedules: [],
+    recentRecords: [],
+  };
+}
+
+function hasVisibleHomeData(response: HomeResponse) {
+  return (
+    response.pets.length > 0 ||
+    response.todaySchedules.length > 0 ||
+    response.overdueSchedules.length > 0 ||
+    response.recentRecords.length > 0 ||
+    response.selectedPet !== null
+  );
+}
+
 export function HomeScreen({
   pets = [],
   initialSelectedPetId,
@@ -64,7 +76,9 @@ export function HomeScreen({
   onOpenPets,
   onCreatePet,
 }: HomeScreenProps) {
-  const [status, setStatus] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
+  const [status, setStatus] = useState<HomeStatus>('loading');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
   const [selectedPetId, setSelectedPetId] = useState<string | undefined>(
     initialSelectedPetId ?? pets[0]?.id,
   );
@@ -90,22 +104,27 @@ export function HomeScreen({
 
   useEffect(() => {
     let cancelled = false;
+    const fallbackHomeData = createFallbackHomeResponse(pets, selectedPetId);
+    const hasCurrentData = hasVisibleHomeData(homeData);
 
     async function loadHome() {
-      setStatus('loading');
+      setRefreshMessage(null);
+
+      if (!hasCurrentData && !hasVisibleHomeData(fallbackHomeData)) {
+        setStatus('loading');
+      } else {
+        setIsRefreshing(true);
+      }
 
       try {
         const response = await fetchHome({ petId: selectedPetId });
-        const mergedPets = mergePets(response.pets, pets);
-        const fallbackSelectedPet =
-          response.selectedPet ??
-          mergedPets.find((pet) => pet.id === selectedPetId) ??
-          mergedPets[0] ??
-          null;
         const mergedResponse: HomeResponse = {
           ...response,
-          pets: mergedPets,
-          selectedPet: fallbackSelectedPet,
+          pets: orderPetsForDisplay(response.pets, response.selectedPet?.id ?? selectedPetId),
+          selectedPet:
+            response.selectedPet ??
+            orderPetsForDisplay(response.pets, selectedPetId)[0] ??
+            null,
         };
 
         if (cancelled) {
@@ -119,21 +138,23 @@ export function HomeScreen({
           return;
         }
 
-        if (pets.length > 0) {
-          setHomeData((current) => ({
-            ...current,
-            pets: mergePets(current.pets, pets),
-            selectedPet:
-              current.selectedPet ??
-              pets.find((pet) => pet.id === selectedPetId) ??
-              pets[0] ??
-              null,
-          }));
-          setStatus('success');
+        if (hasVisibleHomeData(fallbackHomeData)) {
+          setHomeData(fallbackHomeData);
+          setStatus(deriveStatus(fallbackHomeData));
+          return;
+        }
+
+        if (hasCurrentData) {
+          setStatus(deriveStatus(homeData));
+          setRefreshMessage('최신 정보를 가져오지 못해 현재 보고 있던 홈 정보를 유지했어요.');
           return;
         }
 
         setStatus('error');
+      } finally {
+        if (!cancelled) {
+          setIsRefreshing(false);
+        }
       }
     }
 
@@ -179,37 +200,40 @@ export function HomeScreen({
   }
 
   async function handleRefresh() {
-    setStatus('loading');
+    const fallbackHomeData = createFallbackHomeResponse(pets, selectedPetId);
+    setRefreshMessage(null);
+    setIsRefreshing(true);
 
     try {
       const response = await fetchHome({ petId: selectedPetId });
+      const orderedPets = orderPetsForDisplay(response.pets, response.selectedPet?.id ?? selectedPetId);
       const mergedResponse: HomeResponse = {
         ...response,
-        pets: mergePets(response.pets, pets),
+        pets: orderedPets,
         selectedPet:
           response.selectedPet ??
-          mergePets(response.pets, pets).find((pet) => pet.id === selectedPetId) ??
-          mergePets(response.pets, pets)[0] ??
+          orderedPets[0] ??
           null,
       };
       setHomeData(mergedResponse);
       setStatus(deriveStatus(mergedResponse));
     } catch (_error) {
-      if (pets.length > 0) {
-        setHomeData((current) => ({
-          ...current,
-          pets: mergePets(current.pets, pets),
-          selectedPet:
-            current.selectedPet ??
-            pets.find((pet) => pet.id === selectedPetId) ??
-            pets[0] ??
-            null,
-        }));
-        setStatus('success');
+      if (hasVisibleHomeData(fallbackHomeData)) {
+        setHomeData(fallbackHomeData);
+        setStatus(deriveStatus(fallbackHomeData));
+        setRefreshMessage('최신 정보를 가져오지 못해 마지막으로 확인한 반려동물 정보를 보여주고 있어요.');
+        return;
+      }
+
+      if (hasVisibleHomeData(homeData)) {
+        setStatus(deriveStatus(homeData));
+        setRefreshMessage('새로고침에 실패해 현재 보고 있던 홈 정보를 유지했어요.');
         return;
       }
 
       setStatus('error');
+    } finally {
+      setIsRefreshing(false);
     }
   }
 
@@ -228,10 +252,13 @@ export function HomeScreen({
               </Pressable>
             ) : null}
             <Pressable onPress={() => void handleRefresh()} style={styles.refreshButton}>
-              <Text style={styles.refreshButtonText}>다시 불러오기</Text>
+              <Text style={styles.refreshButtonText}>
+                {isRefreshing ? '불러오는 중...' : '다시 불러오기'}
+              </Text>
             </Pressable>
           </View>
         </View>
+        {refreshMessage ? <InlineMessage tone="info" message={refreshMessage} /> : null}
         {status === 'loading' ? (
           <LoadingState
             title="홈 정보를 불러오는 중"

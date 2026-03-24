@@ -129,12 +129,12 @@ function AuthState() {
 
 function AppState() {
   const [route, setRoute] = useState<'home' | 'pets' | 'pet-create' | 'settings'>('home');
-  const [pets, setPets] = useState<Pet[]>([]);
+  const [cachedPets, setCachedPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | undefined>(undefined);
   const [homeRefreshToken, setHomeRefreshToken] = useState(0);
 
   function upsertPet(nextPet: Pet) {
-    setPets((current) => {
+    setCachedPets((current) => {
       const withoutNextPet = current.filter((pet) => pet.id !== nextPet.id);
       return [...withoutNextPet, nextPet];
     });
@@ -181,7 +181,7 @@ function AppState() {
         </View>
         {route === 'home' ? (
           <HomeScreen
-            pets={pets}
+            pets={cachedPets}
             initialSelectedPetId={selectedPetId}
             refreshToken={homeRefreshToken}
             onOpenPets={() => setRoute('pets')}
@@ -190,6 +190,9 @@ function AppState() {
         ) : null}
         {route === 'pets' ? (
           <PetListScreen
+            pets={cachedPets}
+            selectedPetId={selectedPetId}
+            refreshToken={homeRefreshToken}
             onCreatePet={() => setRoute('pet-create')}
             onBackHome={() => setRoute('home')}
           />

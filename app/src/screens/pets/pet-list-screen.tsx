@@ -10,13 +10,35 @@ import type { Pet } from '../../types/domain';
 import { colors, radius, spacing, typography } from '../../theme';
 
 interface PetListScreenProps {
+  pets?: Pet[];
+  selectedPetId?: string;
+  refreshToken?: number;
   onCreatePet?: () => void;
   onBackHome?: () => void;
 }
 
-export function PetListScreen({ onCreatePet, onBackHome }: PetListScreenProps) {
+function orderPetsForDisplay(pets: Pet[], selectedPetId?: string) {
+  if (!selectedPetId) {
+    return pets;
+  }
+
+  const selectedPet = pets.find((pet) => pet.id === selectedPetId);
+  if (!selectedPet) {
+    return pets;
+  }
+
+  return [selectedPet, ...pets.filter((pet) => pet.id !== selectedPetId)];
+}
+
+export function PetListScreen({
+  pets: localPets = [],
+  selectedPetId,
+  refreshToken = 0,
+  onCreatePet,
+  onBackHome,
+}: PetListScreenProps) {
   const [status, setStatus] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
-  const [pets, setPets] = useState<Pet[]>([]);
+  const [pets, setPets] = useState<Pet[]>(localPets);
 
   async function loadPets(cancelled = false) {
     setStatus('loading');
@@ -27,10 +49,17 @@ export function PetListScreen({ onCreatePet, onBackHome }: PetListScreenProps) {
         return;
       }
 
-      setPets(result);
-      setStatus(result.length === 0 ? 'empty' : 'success');
+      const orderedPets = orderPetsForDisplay(result, selectedPetId);
+      setPets(orderedPets);
+      setStatus(orderedPets.length === 0 ? 'empty' : 'success');
     } catch {
       if (cancelled) {
+        return;
+      }
+
+      if (localPets.length > 0) {
+        setPets(orderPetsForDisplay(localPets, selectedPetId));
+        setStatus('success');
         return;
       }
 
@@ -46,7 +75,7 @@ export function PetListScreen({ onCreatePet, onBackHome }: PetListScreenProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [localPets, refreshToken, selectedPetId]);
 
   return (
     <ScreenContainer>
