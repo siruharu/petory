@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "petory",
+    "slug": "petory",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["ios", "android", "web"],
+    "web": {
+      "bundler": "metro"
+    },
+    "assetBundlePatterns": ["**/*"]
+  }
+}

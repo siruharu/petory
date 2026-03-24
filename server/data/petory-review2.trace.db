@@ -1,0 +1,16 @@
+2026-03-24 12:07:41.630394+09:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Syntax error in SQL statement "create table records (\000a    id uuid primary key,\000a    user_id uuid not null,\000a    pet_id uuid not null,\000a    type varchar(30) not null,\000a    title varchar(120) not null,\000a    note text,\000a    occurred_at timestamp not null,\000a    [*]value numeric(10, 2),\000a    unit varchar(20),\000a    source_schedule_id uuid,\000a    created_at timestamp not null default current_timestamp,\000a    updated_at timestamp not null default current_timestamp\000a)"; expected "identifier"; SQL statement:
+create table records (
+    id uuid primary key,
+    user_id uuid not null,
+    pet_id uuid not null,
+    type varchar(30) not null,
+    title varchar(120) not null,
+    note text,
+    occurred_at timestamp not null,
+    value numeric(10, 2),
+    unit varchar(20),
+    source_schedule_id uuid,
+    created_at timestamp not null default current_timestamp,
+    updated_at timestamp not null default current_timestamp
+) [42001-224]

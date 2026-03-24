@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: petory
+  profiles:
+    default: local
+  datasource:
+    url: ${DB_URL:jdbc:h2:file:./data/petory}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:haehyuk.choi@c-nave.com}
+    password: ${MAIL_PASSWORD:jsyu hkvw lboq sabb}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+app:
+  auth:
+    jwt:
+      issuer: ${JWT_ISSUER:petory}
+      secret: ${JWT_SECRET:334a12de882874522f18c430cb05cc30}
+      access-token-expires-minutes: ${JWT_ACCESS_TOKEN_EXPIRES_MINUTES:60}
+    verification:
+      token-expires-minutes: ${EMAIL_VERIFICATION_TOKEN_EXPIRES_MINUTES:30}
+      verify-base-url: ${EMAIL_VERIFY_BASE_URL:http://localhost:8081/verify-email}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8081,http://localhost:19006}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.petory: DEBUG

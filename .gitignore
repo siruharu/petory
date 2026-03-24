@@ -1,0 +1,25 @@
+# macOS / IDE
+.DS_Store
+.idea/
+
+# Frontend
+app/node_modules/
+app/.expo/
+app/.expo-shared/
+app/dist/
+app/build/
+app/coverage/
+
+# Backend
+server/.gradle/
+server/build/
+server/out/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
