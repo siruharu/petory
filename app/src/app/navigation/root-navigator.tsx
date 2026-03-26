@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, BackHandler, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuthContext } from '../providers/auth-provider';
 import { ScreenContainer } from '../../components/common/screen-container';
 import { SectionHeader } from '../../components/common/section-header';
@@ -12,7 +12,10 @@ import { HomeScreen } from '../../screens/home/home-screen';
 import { SettingsScreen } from '../../screens/settings/settings-screen';
 import { PetListScreen } from '../../screens/pets/pet-list-screen';
 import { PetFormScreen } from '../../screens/pets/pet-form-screen';
-import type { Pet } from '../../types/domain';
+import { ScheduleListScreen } from '../../screens/schedules/schedule-list-screen';
+import { ScheduleFormScreen } from '../../screens/schedules/schedule-form-screen';
+import { fetchPets } from '../../features/pets/pet-api';
+import type { Pet, Schedule } from '../../types/domain';
 import { colors, radius, spacing, typography } from '../../theme';
 
 type BrowserLocationLike = {
@@ -128,10 +131,56 @@ function AuthState() {
 }
 
 function AppState() {
-  const [route, setRoute] = useState<'home' | 'pets' | 'pet-create' | 'settings'>('home');
+  type BaseRoute = 'home' | 'pets' | 'schedules' | 'settings';
+  type ChildRoute = 'pet-create' | 'schedule-create';
+  type AppRoute = BaseRoute | ChildRoute;
+
+  const [routeStack, setRouteStack] = useState<AppRoute[]>(['home']);
   const [cachedPets, setCachedPets] = useState<Pet[]>([]);
   const [selectedPetId, setSelectedPetId] = useState<string | undefined>(undefined);
   const [homeRefreshToken, setHomeRefreshToken] = useState(0);
+  const [scheduleRefreshToken, setScheduleRefreshToken] = useState(0);
+  const [petBootstrapStatus, setPetBootstrapStatus] = useState<'loading' | 'success' | 'error'>(
+    'loading',
+  );
+  const route = routeStack[routeStack.length - 1] ?? 'home';
+
+  function openBaseRoute(nextRoute: BaseRoute) {
+    setRouteStack([nextRoute]);
+  }
+
+  function openChildRoute(nextRoute: ChildRoute) {
+    setRouteStack((current) => {
+      const currentRoute = current[current.length - 1];
+      return currentRoute === nextRoute ? current : [...current, nextRoute];
+    });
+  }
+
+  function navigateBack() {
+    setRouteStack((current) => {
+      if (current.length <= 1) {
+        return current;
+      }
+
+      return current.slice(0, -1);
+    });
+  }
+
+  function mergePets(currentPets: Pet[], incomingPets: Pet[]) {
+    const petById = new Map<string, Pet>();
+
+    incomingPets.forEach((pet) => {
+      petById.set(pet.id, pet);
+    });
+
+    currentPets.forEach((pet) => {
+      if (!petById.has(pet.id)) {
+        petById.set(pet.id, pet);
+      }
+    });
+
+    return Array.from(petById.values());
+  }
 
   function upsertPet(nextPet: Pet) {
     setCachedPets((current) => {
@@ -144,8 +193,86 @@ function AppState() {
     upsertPet(nextPet);
     setSelectedPetId(nextPet.id);
     setHomeRefreshToken((current) => current + 1);
-    setRoute('home');
+    setRouteStack(['home']);
   }
+
+  function handleScheduleCreateSuccess(_schedule: Schedule) {
+    setHomeRefreshToken((current) => current + 1);
+    setScheduleRefreshToken((current) => current + 1);
+    setRouteStack(['schedules']);
+  }
+
+  function handleScheduleCompleted() {
+    setHomeRefreshToken((current) => current + 1);
+    setScheduleRefreshToken((current) => current + 1);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapPets() {
+      setPetBootstrapStatus('loading');
+
+      try {
+        const initialPets = await fetchPets();
+        if (cancelled) {
+          return;
+        }
+
+        setCachedPets((current) => mergePets(current, initialPets));
+        setSelectedPetId((current) => current ?? initialPets[0]?.id);
+        setPetBootstrapStatus('success');
+      } catch (_error) {
+        if (cancelled) {
+          return;
+        }
+
+        setPetBootstrapStatus('error');
+      }
+    }
+
+    void bootstrapPets();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (routeStack.length > 1) {
+        navigateBack();
+        return true;
+      }
+
+      if (route !== 'home') {
+        openBaseRoute('home');
+        return true;
+      }
+
+      Alert.alert('앱을 종료할까요?', 'Petory를 종료하시겠어요?', [
+        {
+          text: '취소',
+          style: 'cancel',
+        },
+        {
+          text: '종료',
+          style: 'destructive',
+          onPress: () => BackHandler.exitApp(),
+        },
+      ]);
+
+      return true;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [route, routeStack.length]);
 
   return (
     <ScreenContainer>
@@ -154,7 +281,7 @@ function AppState() {
           <Text style={styles.appTitle}>Petory</Text>
           <View style={styles.segmentedControl}>
             <Pressable
-              onPress={() => setRoute('home')}
+              onPress={() => openBaseRoute('home')}
               style={[styles.segmentButton, route === 'home' ? styles.segmentButtonActive : null]}
             >
               <Text style={[styles.segmentText, route === 'home' ? styles.segmentTextActive : null]}>
@@ -162,7 +289,7 @@ function AppState() {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setRoute('pets')}
+              onPress={() => openBaseRoute('pets')}
               style={[styles.segmentButton, route === 'pets' ? styles.segmentButtonActive : null]}
             >
               <Text style={[styles.segmentText, route === 'pets' ? styles.segmentTextActive : null]}>
@@ -170,7 +297,15 @@ function AppState() {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setRoute('settings')}
+              onPress={() => openBaseRoute('schedules')}
+              style={[styles.segmentButton, route === 'schedules' ? styles.segmentButtonActive : null]}
+            >
+              <Text style={[styles.segmentText, route === 'schedules' ? styles.segmentTextActive : null]}>
+                일정
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => openBaseRoute('settings')}
               style={[styles.segmentButton, route === 'settings' ? styles.segmentButtonActive : null]}
             >
               <Text style={[styles.segmentText, route === 'settings' ? styles.segmentTextActive : null]}>
@@ -184,8 +319,12 @@ function AppState() {
             pets={cachedPets}
             initialSelectedPetId={selectedPetId}
             refreshToken={homeRefreshToken}
-            onOpenPets={() => setRoute('pets')}
-            onCreatePet={() => setRoute('pet-create')}
+            isPetsBootstrapping={petBootstrapStatus === 'loading'}
+            onSelectPet={setSelectedPetId}
+            onOpenPets={() => openBaseRoute('pets')}
+            onCreatePet={() => openChildRoute('pet-create')}
+            onOpenSchedules={() => openBaseRoute('schedules')}
+            onCreateSchedule={() => openChildRoute('schedule-create')}
           />
         ) : null}
         {route === 'pets' ? (
@@ -193,15 +332,33 @@ function AppState() {
             pets={cachedPets}
             selectedPetId={selectedPetId}
             refreshToken={homeRefreshToken}
-            onCreatePet={() => setRoute('pet-create')}
-            onBackHome={() => setRoute('home')}
+            onCreatePet={() => openChildRoute('pet-create')}
+            onBackHome={() => openBaseRoute('home')}
           />
         ) : null}
         {route === 'pet-create' ? (
           <PetFormScreen
             mode="create"
-            onCancel={() => setRoute('pets')}
+            onCancel={navigateBack}
             onSuccess={handlePetCreateSuccess}
+          />
+        ) : null}
+        {route === 'schedules' ? (
+          <ScheduleListScreen
+            selectedPetId={selectedPetId}
+            refreshToken={scheduleRefreshToken}
+            onCreateSchedule={() => openChildRoute('schedule-create')}
+            onBackHome={() => openBaseRoute('home')}
+            onScheduleCompleted={handleScheduleCompleted}
+          />
+        ) : null}
+        {route === 'schedule-create' ? (
+          <ScheduleFormScreen
+            selectedPetId={selectedPetId}
+            selectedPetName={cachedPets.find((pet) => pet.id === selectedPetId)?.name}
+            pets={cachedPets}
+            onCancel={navigateBack}
+            onSuccess={handleScheduleCreateSuccess}
           />
         ) : null}
         {route === 'settings' ? <SettingsScreen /> : null}

@@ -19,6 +19,7 @@ export function PetSwitcherSheet({
 }: PetSwitcherSheetProps) {
   const selectedPet = pets.find((pet) => pet.id === selectedPetId) ?? null;
   const otherPets = pets.filter((pet) => pet.id !== selectedPetId);
+  const selectedPetInitial = selectedPet?.name.trim().charAt(0) ?? '?';
 
   return (
     <View style={styles.container}>
@@ -26,6 +27,9 @@ export function PetSwitcherSheet({
 
       {selectedPet ? (
         <View style={[styles.petRow, styles.selectedRow]}>
+          <View style={styles.selectedAvatar}>
+            <Text style={styles.selectedAvatarText}>{selectedPetInitial}</Text>
+          </View>
           <View style={styles.petRowContent}>
             <Text style={styles.petName}>{selectedPet.name}</Text>
             <Text style={styles.petMeta}>현재 선택됨 · {selectedPet.species}</Text>
@@ -71,7 +75,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
     borderRadius: radius.xl,
-    backgroundColor: colors.surface.glass,
+    backgroundColor: colors.surface.subtle,
     borderWidth: 1,
     borderColor: colors.border.subtle,
     ...shadows.card,
@@ -99,12 +103,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.elevated,
   },
   selectedRow: {
-    backgroundColor: '#FFF6EF',
-    borderColor: '#F6D7BE',
+    backgroundColor: colors.surface.default,
+    borderColor: colors.border.strong,
+    shadowColor: '#000000',
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 1,
   },
   petRowContent: {
     flex: 1,
     gap: spacing.xxs,
+  },
+  selectedAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F6E2D2',
+    borderWidth: 1,
+    borderColor: '#F0C7A9',
+  },
+  selectedAvatarText: {
+    color: colors.brand.primary,
+    ...typography.title.medium,
   },
   petName: {
     color: colors.text.primary,
@@ -121,6 +147,11 @@ const styles = StyleSheet.create({
   selectedBadge: {
     color: colors.brand.primary,
     ...typography.label.medium,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radius.full,
+    backgroundColor: '#FFF0E5',
   },
   switchLabel: {
     color: colors.text.secondary,

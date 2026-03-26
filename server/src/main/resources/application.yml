@@ -21,8 +21,8 @@ spring:
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:haehyuk.choi@c-nave.com}
-    password: ${MAIL_PASSWORD:jsyu hkvw lboq sabb}
+    username: ${MAIL_USERNAME:no-reply@example.com}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
@@ -31,7 +31,7 @@ app:
   auth:
     jwt:
       issuer: ${JWT_ISSUER:petory}
-      secret: ${JWT_SECRET:334a12de882874522f18c430cb05cc30}
+      secret: ${JWT_SECRET:}
       access-token-expires-minutes: ${JWT_ACCESS_TOKEN_EXPIRES_MINUTES:60}
     verification:
       token-expires-minutes: ${EMAIL_VERIFICATION_TOKEN_EXPIRES_MINUTES:30}

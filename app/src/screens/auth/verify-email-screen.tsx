@@ -85,8 +85,12 @@ export function VerifyEmailScreen({
       <SectionHeader
         eyebrow="이메일 인증"
         title="메일 링크로 인증을 마무리해 주세요"
-        description="메일의 링크를 열면 자동으로 인증을 시도합니다. 실패한 경우에만 아래 수동 인증을 사용하면 됩니다."
+        description="웹에서는 메일 링크로 자동 인증을 시도할 수 있지만, 모바일 앱에서는 링크가 자동으로 연결되지 않을 수 있습니다. 이 경우 아래 토큰 직접 입력을 사용합니다."
       />
+        <InlineMessage
+          tone="info"
+          message="현재 모바일 앱은 deep link 자동 인증을 지원하지 않습니다. 메일 링크를 웹에서 열어 인증하거나, 메일에 포함된 토큰을 아래에 붙여 넣어 진행해 주세요."
+        />
 
         {initialToken ? (
           <FormSection
@@ -126,7 +130,7 @@ export function VerifyEmailScreen({
           >
             <TextField
               label="인증 토큰"
-              placeholder="Verification Token"
+              placeholder="메일에서 받은 인증 토큰을 붙여 넣어 주세요"
               autoCapitalize="none"
               value={token}
               onChangeText={setToken}

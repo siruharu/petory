@@ -18,8 +18,12 @@ interface HomeScreenProps {
   pets?: Pet[];
   initialSelectedPetId?: string;
   refreshToken?: number;
+  isPetsBootstrapping?: boolean;
+  onSelectPet?: (petId: string) => void;
   onOpenPets?: () => void;
   onCreatePet?: () => void;
+  onOpenSchedules?: () => void;
+  onCreateSchedule?: () => void;
 }
 
 type HomeStatus = 'loading' | 'success' | 'empty' | 'error';
@@ -73,8 +77,12 @@ export function HomeScreen({
   pets = [],
   initialSelectedPetId,
   refreshToken = 0,
+  isPetsBootstrapping = false,
+  onSelectPet,
   onOpenPets,
   onCreatePet,
+  onOpenSchedules,
+  onCreateSchedule,
 }: HomeScreenProps) {
   const [status, setStatus] = useState<HomeStatus>('loading');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -103,14 +111,26 @@ export function HomeScreen({
   }, [homeData.pets, homeData.selectedPet?.id, initialSelectedPetId, pets]);
 
   useEffect(() => {
+    if (!selectedPetId) {
+      return;
+    }
+
+    onSelectPet?.(selectedPetId);
+  }, [onSelectPet, selectedPetId]);
+
+  useEffect(() => {
     let cancelled = false;
     const fallbackHomeData = createFallbackHomeResponse(pets, selectedPetId);
     const hasCurrentData = hasVisibleHomeData(homeData);
+    const shouldKeepBootstrapping =
+      isPetsBootstrapping && !hasCurrentData && !hasVisibleHomeData(fallbackHomeData);
 
     async function loadHome() {
       setRefreshMessage(null);
 
-      if (!hasCurrentData && !hasVisibleHomeData(fallbackHomeData)) {
+      if (shouldKeepBootstrapping) {
+        setStatus('loading');
+      } else if (!hasCurrentData && !hasVisibleHomeData(fallbackHomeData)) {
         setStatus('loading');
       } else {
         setIsRefreshing(true);
@@ -132,9 +152,21 @@ export function HomeScreen({
         }
 
         setHomeData(mergedResponse);
-        setStatus(deriveStatus(mergedResponse));
+        const nextStatus = deriveStatus(mergedResponse);
+
+        if (nextStatus === 'empty' && shouldKeepBootstrapping) {
+          setStatus('loading');
+          return;
+        }
+
+        setStatus(nextStatus);
       } catch (_error) {
         if (cancelled) {
+          return;
+        }
+
+        if (shouldKeepBootstrapping) {
+          setStatus('loading');
           return;
         }
 
@@ -163,7 +195,7 @@ export function HomeScreen({
     return () => {
       cancelled = true;
     };
-  }, [pets, refreshToken, selectedPetId]);
+  }, [isPetsBootstrapping, pets, refreshToken, selectedPetId]);
 
   const selectedPet = useMemo(
     () =>
@@ -251,6 +283,16 @@ export function HomeScreen({
                 <Text style={styles.secondaryActionButtonText}>반려동물 관리</Text>
               </Pressable>
             ) : null}
+            {selectedPet && onOpenSchedules ? (
+              <Pressable onPress={onOpenSchedules} style={styles.secondaryActionButton}>
+                <Text style={styles.secondaryActionButtonText}>일정 관리</Text>
+              </Pressable>
+            ) : null}
+            {selectedPet && onCreateSchedule ? (
+              <Pressable onPress={onCreateSchedule} style={styles.secondaryActionButton}>
+                <Text style={styles.secondaryActionButtonText}>일정 추가</Text>
+              </Pressable>
+            ) : null}
             <Pressable onPress={() => void handleRefresh()} style={styles.refreshButton}>
               <Text style={styles.refreshButtonText}>
                 {isRefreshing ? '불러오는 중...' : '다시 불러오기'}
@@ -325,6 +367,8 @@ export function HomeScreen({
                     <EmptyState
                       title="오늘 일정이 없어요"
                       description="새 일정을 추가하면 오늘 해야 할 일을 여기에서 바로 확인할 수 있어요."
+                      actionLabel={selectedPet && onCreateSchedule ? '새 일정 등록' : undefined}
+                      onAction={selectedPet ? onCreateSchedule : undefined}
                     />
                   )}
                 </View>

@@ -9,11 +9,15 @@ app/.expo-shared/
 app/dist/
 app/build/
 app/coverage/
+app/android/app/debug.keystore
+app/android/local.properties
 
 # Backend
 server/.gradle/
 server/build/
 server/out/
+server/data/*.mv.db
+server/data/*.trace.db
 
 # Env
 .env
@@ -22,4 +26,3 @@ server/out/
 
 # Logs
 *.log
-

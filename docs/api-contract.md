@@ -415,6 +415,11 @@ Query:
 - `from` optional
 - `to` optional
 
+비고:
+
+- `status=overdue`는 별도 저장 상태보다 `dueAt < now && completedAt == null` 기준으로 조회 시 계산될 수 있다.
+- `from`, `to`는 `dueAt` 기준 ISO-8601 datetime 문자열을 사용한다.
+
 예시:
 
 - `/api/schedules?petId=pet_123`
@@ -533,6 +538,8 @@ Response:
 
 - `createRecord = false`이면 `record`는 `null`일 수 있다.
 - 반복 일정이 아니면 `nextSchedule`는 `null`일 수 있다.
+- 반복 일정의 `nextSchedule`은 원래 `dueAt` cadence 기준으로 계산될 수 있다.
+- `record.type`은 지원되는 record 타입 체계에 맞춰 schedule type에서 매핑될 수 있다.
 
 ## 7. Record API
 
@@ -721,6 +728,10 @@ Response:
   }
 }
 ```
+
+비고:
+
+- `todaySchedules`, `overdueSchedules` 분류는 서버 기준 현재 시각과 `completedAt` 여부를 기준으로 계산될 수 있다.
 
 ## 9. Notification API
 

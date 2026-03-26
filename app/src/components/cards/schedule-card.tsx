@@ -47,7 +47,8 @@ export function ScheduleCard({
       {!isCompleted ? (
         <Pressable
           onPress={() => onComplete?.(schedule.id)}
-          style={styles.completeButton}
+          disabled={isCompleting}
+          style={[styles.completeButton, isCompleting ? styles.completeButtonDisabled : null]}
         >
           <Text style={styles.completeButtonText}>
             {isCompleting ? '완료 처리 중...' : '오늘 일정 완료'}
@@ -102,6 +103,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.text.primary,
     paddingHorizontal: spacing.md,
+  },
+  completeButtonDisabled: {
+    opacity: 0.6,
   },
   completeButtonText: {
     color: colors.text.inverse,

@@ -8,12 +8,15 @@ import {
   getStoredPushRegistration,
   syncPushNotifications,
 } from '../../services/notifications/push-service';
+import { getApiBaseUrl } from '../../services/api/client';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export function SettingsScreen() {
   const { user, logout, isSubmitting } = useAuth();
   const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [isSyncingPush, setIsSyncingPush] = useState(false);
+  const apiBaseUrl = getApiBaseUrl();
+  const isExpoGoLikely = !apiBaseUrl.includes('10.0.2.2');
 
   async function handleLogout() {
     try {
@@ -69,12 +72,27 @@ export function SettingsScreen() {
       </View>
 
       <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>실기기 연결</Text>
+        <Text style={styles.secondaryValue}>
+          현재 API 서버 주소를 확인하고, 안드로이드 실기기에서는 localhost 대신 개발 머신 LAN IP를 사용해야 합니다.
+        </Text>
+        <Text style={styles.debugLabel}>API_BASE_URL</Text>
+        <Text style={styles.debugValue}>{apiBaseUrl}</Text>
+      </View>
+
+      <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>알림</Text>
         <Text style={styles.secondaryValue}>
           {getStoredPushRegistration()
             ? '로그아웃 시 정리할 푸시 토큰이 저장되어 있어요'
             : '아직 저장된 푸시 토큰이 없어요'}
         </Text>
+        {isExpoGoLikely ? (
+          <InlineMessage
+            tone="info"
+            message="Expo Go 실기기 테스트에서는 푸시 알림이 제한되거나 동작하지 않을 수 있어요. 푸시 검증은 Android native build 또는 dev client 이후에 진행하는 것을 기준으로 합니다."
+          />
+        ) : null}
         <Pressable onPress={() => void handleSyncPushToken()} style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>
             {isSyncingPush ? '알림 설정 중...' : '푸시 알림 활성화'}
@@ -122,6 +140,14 @@ const styles = StyleSheet.create({
   secondaryValue: {
     color: colors.text.secondary,
     ...typography.body.medium,
+  },
+  debugLabel: {
+    color: colors.text.primary,
+    ...typography.label.medium,
+  },
+  debugValue: {
+    color: colors.text.secondary,
+    ...typography.body.small,
   },
   primaryButton: {
     alignItems: 'center',

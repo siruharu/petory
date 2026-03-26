@@ -1,5 +1,6 @@
 import React from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../theme';
 
 interface ScreenContainerProps {
@@ -11,23 +12,29 @@ export function ScreenContainer({
   children,
   scrollable = false,
 }: ScreenContainerProps) {
+  const insets = useSafeAreaInsets();
+  const verticalPadding = {
+    paddingTop: insets.top + spacing.md,
+    paddingBottom: insets.bottom + spacing.lg,
+  };
+
   if (scrollable) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, verticalPadding]}
           style={styles.scrollView}
         >
           {children}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.content}>{children}</View>
-    </SafeAreaView>
+    <View style={styles.safeArea}>
+      <View style={[styles.content, verticalPadding]}>{children}</View>
+    </View>
   );
 }
 
@@ -39,16 +46,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
     gap: spacing.lg,
   },
 });

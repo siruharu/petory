@@ -2,13 +2,27 @@
   "expo": {
     "name": "petory",
     "slug": "petory",
+    "scheme": "petory",
     "version": "0.0.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "android": {
+      "package": "com.petory.app"
+    },
+    "plugins": [
+      "expo-dev-client",
+      "@react-native-firebase/app"
+    ],
     "web": {
       "bundler": "metro"
     },
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }

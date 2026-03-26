@@ -5,8 +5,8 @@ import { ScreenContainer } from '../../components/common/screen-container';
 import { InlineMessage } from '../../components/feedback/inline-message';
 import { createPet, updatePet } from '../../features/pets/pet-api';
 import type { CreatePetPayload, Pet } from '../../types/domain';
+import { pickImageAsDataUrl } from '../../utils/image-picker';
 import { calculatePetAgeText } from '../../utils/pet-age';
-import { pickWebImageAsDataUrl } from '../../utils/web-image-picker';
 import { colors, radius, spacing, typography } from '../../theme';
 
 type PetFormState = Omit<CreatePetPayload, 'weight'> & {
@@ -140,7 +140,7 @@ export function PetFormScreen({
 
   async function handlePickPhoto() {
     try {
-      const pickedImage = await pickWebImageAsDataUrl();
+      const pickedImage = await pickImageAsDataUrl();
 
       if (!pickedImage) {
         return;

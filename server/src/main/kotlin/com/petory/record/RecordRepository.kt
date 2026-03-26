@@ -1,12 +1,12 @@
 package com.petory.record
 
+import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
-interface RecordRepository {
-    fun findAllByUserId(userId: UUID): List<RecordEntity>
-    fun findAllByUserIdAndPetId(userId: UUID, petId: UUID): List<RecordEntity>
-    fun findAllByUserIdAndPetIdAndType(userId: UUID, petId: UUID, type: RecordType): List<RecordEntity>
+interface RecordRepository : JpaRepository<RecordEntity, UUID> {
+    fun findAllByUserIdOrderByOccurredAtDesc(userId: UUID): List<RecordEntity>
+    fun findAllByUserIdAndPetIdOrderByOccurredAtDesc(userId: UUID, petId: UUID): List<RecordEntity>
+    fun findAllByUserIdAndPetIdAndTypeOrderByOccurredAtDesc(userId: UUID, petId: UUID, type: RecordType): List<RecordEntity>
     fun findByIdAndUserId(id: UUID, userId: UUID): RecordEntity?
-    fun save(record: RecordEntity): RecordEntity
+    fun findTop3ByUserIdAndPetIdOrderByOccurredAtDesc(userId: UUID, petId: UUID): List<RecordEntity>
 }
-

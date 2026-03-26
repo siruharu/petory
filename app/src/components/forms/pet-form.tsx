@@ -125,7 +125,7 @@ export function PetForm({
             <Text style={styles.photoHelperText}>
               {Platform.OS === 'web'
                 ? '파일을 직접 선택해 등록할 수 있어요.'
-                : '현재 단계에서는 웹 파일 선택을 우선 지원해요.'}
+                : '기기 사진 보관함에서 이미지를 선택해 등록할 수 있어요.'}
             </Text>
           </View>
           <View style={styles.photoActions}>

@@ -65,6 +65,10 @@ export function SignupScreen() {
 
       {successMessage ? <InlineMessage tone="success" message={successMessage} /> : null}
       {submitError ? <InlineMessage tone="error" message={submitError} /> : null}
+      <InlineMessage
+        tone="info"
+        message="모바일 앱에서는 메일 링크가 앱으로 자동 복귀하지 않을 수 있어요. 링크를 웹에서 열어 인증을 마치거나, 필요한 경우 인증 토큰을 앱의 수동 인증 화면에 붙여 넣어 진행합니다."
+      />
       {hasEmailDeliveryFailure(submitError) ? (
         <InlineMessage
           tone="info"
@@ -89,7 +93,7 @@ export function SignupScreen() {
         <View style={styles.pendingPanel}>
           <Text style={styles.pendingTitle}>이제 이메일 인증만 남았어요</Text>
           <Text style={styles.pendingDescription}>
-            {pendingEmail}로 인증 메일을 보냈습니다. 메일을 확인한 뒤 로그인해 주세요.
+            {pendingEmail}로 인증 메일을 보냈습니다. 모바일에서는 메일 링크를 웹에서 열어 인증하거나, 토큰을 복사해 앱에서 직접 인증한 뒤 로그인해 주세요.
           </Text>
           <Pressable
             onPress={() => void handleResendVerification()}

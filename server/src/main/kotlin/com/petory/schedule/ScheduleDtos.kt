@@ -1,5 +1,7 @@
 package com.petory.schedule
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+
 data class CreateScheduleRequest(
     val petId: String,
     val type: String,
@@ -12,6 +14,12 @@ data class CreateScheduleRequest(
 data class CompleteScheduleRequest(
     val completedAt: String? = null,
     val createRecord: Boolean = true,
+)
+
+data class ScheduleFilters(
+    val status: String? = null,
+    val from: String? = null,
+    val to: String? = null,
 )
 
 data class ScheduleResponse(

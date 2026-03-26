@@ -25,6 +25,10 @@ export class ApiError extends Error {
   }
 }
 
+export function getApiBaseUrl() {
+  return API_BASE_URL;
+}
+
 export function setAccessTokenProvider(provider: (() => string | null) | null) {
   accessTokenProvider = provider;
 }
@@ -44,15 +48,32 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
     headers.set(key, value);
   });
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch (error) {
+    const baseUrl = API_BASE_URL;
+    const isLocalhostTarget =
+      baseUrl.includes('://localhost') || baseUrl.includes('://127.0.0.1');
+    const guidance = isLocalhostTarget
+      ? '안드로이드 실기기에서는 localhost 대신 개발 머신의 LAN IP를 EXPO_PUBLIC_API_BASE_URL로 설정해 주세요.'
+      : 'API 서버 주소와 같은 Wi-Fi/LAN 연결 상태를 확인해 주세요.';
+    const originalMessage = error instanceof Error ? error.message : 'Network request failed';
+
+    throw new Error(`API 서버에 연결하지 못했어요. ${guidance} 현재 API_BASE_URL: ${baseUrl}. ${originalMessage}`);
+  }
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as ApiErrorPayload | null;
     if (payload?.error) {
       throw new ApiError(payload);
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('인증이 만료되었거나 로그인 정보가 올바르지 않아요. 다시 로그인해 주세요.');
     }
     throw new Error(`API request failed: ${response.status}`);
   }
